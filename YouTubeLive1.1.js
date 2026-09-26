@@ -19,15 +19,23 @@ class YouTubeLiveChatExt {
     this.currentUrl = '';
     this.currentVideoId = '';
     this.manualDisconnect = false; // true cuando el usuario pide desconectar a propósito
+
+    // Modo comentario por comentario: si está activo, los comentarios se
+    // quedan en cola hasta que el proyecto pida "siguiente comentario".
+    this.manualMode = false;
+    this.totalComments = 0; // contador de comentarios recibidos desde el último "escuchar video ID"
   }
 
   getInfo() {
     return {
       id: 'ytlivechatws',
-      name: 'YouTube Live Chat',
+      name: 'YouTube Live Chat 1.1',
       color1: '#FF0000',
       color2: '#CC0000',
+      menuIconURI: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+CiAgPHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjM4IiBoZWlnaHQ9IjM4IiByeD0iOSIgZmlsbD0iI0ZGMDAwMCIgc3Ryb2tlPSIjOTkwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTUsMTEgMTUsMjkgMjksMjAiIGZpbGw9IiNGRkZGRkYiLz4KPC9zdmc+Cg==',
+      blockIconURI: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+CiAgPHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjM4IiBoZWlnaHQ9IjM4IiByeD0iOSIgZmlsbD0iI0ZGMDAwMCIgc3Ryb2tlPSIjOTkwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTUsMTEgMTUsMjkgMjksMjAiIGZpbGw9IiNGRkZGRkYiLz4KPC9zdmc+Cg==',
       blocks: [
+        // --- Conexión ---
         {
           opcode: 'connectWS',
           blockType: Scratch.BlockType.COMMAND,
@@ -37,6 +45,18 @@ class YouTubeLiveChatExt {
           }
         },
         {
+          opcode: 'disconnectWS',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'desconectar'
+        },
+        {
+          opcode: 'isConnected',
+          blockType: Scratch.BlockType.BOOLEAN,
+          text: '¿conectado al servidor?'
+        },
+        '---',
+        // --- Video ---
+        {
           opcode: 'startLive',
           blockType: Scratch.BlockType.COMMAND,
           text: 'escuchar video ID [ID]',
@@ -44,6 +64,8 @@ class YouTubeLiveChatExt {
             ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'dQw4w9WgXcQ' }
           }
         },
+        '---',
+        // --- Comentarios ---
         {
           opcode: 'onNewComment',
           blockType: Scratch.BlockType.EVENT, // Usa EVENT, es fundamental para no trabarse
@@ -62,20 +84,37 @@ class YouTubeLiveChatExt {
           }
         },
         {
-          opcode: 'isConnected',
-          blockType: Scratch.BlockType.BOOLEAN,
-          text: '¿conectado al servidor?'
+          opcode: 'setManualMode',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'modo comentario por comentario [ESTADO]',
+          arguments: {
+            ESTADO: { type: Scratch.ArgumentType.STRING, menu: 'estadoMenu', defaultValue: 'activado' }
+          }
         },
         {
-          opcode: 'disconnectWS',
+          opcode: 'nextComment',
           blockType: Scratch.BlockType.COMMAND,
-          text: 'desconectar'
+          text: 'siguiente comentario'
+        },
+        {
+          opcode: 'getTotalComments',
+          blockType: Scratch.BlockType.REPORTER,
+          text: 'total de comentarios recibidos'
+        },
+        {
+          opcode: 'getPendingComments',
+          blockType: Scratch.BlockType.REPORTER,
+          text: 'comentarios en espera'
         }
       ],
       menus: {
         datosMenu: {
           acceptReporters: true,
           items: ['autor', 'mensaje', 'foto de perfil', 'es moderador', 'es creador']
+        },
+        estadoMenu: {
+          acceptReporters: false,
+          items: ['activado', 'desactivado']
         }
       }
     };
@@ -97,18 +136,12 @@ class YouTubeLiveChatExt {
 
     this.ws = new WebSocket(this.currentUrl);
 
-    // Libera un mensaje cada 50ms hacia los bloques de TurboWarp
+    // Libera un mensaje cada 50ms hacia los bloques de TurboWarp, salvo que
+    // esté activado el modo "comentario por comentario" (ahí solo avanza
+    // cuando el proyecto llama a "siguiente comentario").
     this.queueInterval = setInterval(() => {
-      if (this.messageQueue.length > 0) {
-        const payload = this.messageQueue.shift();
-
-        this.author = payload.author;
-        this.message = payload.message;
-        this.avatar = payload.avatar;
-        this.isMod = payload.isMod;
-        this.isOwner = payload.isOwner;
-
-        Scratch.vm.runtime.startHats('ytlivechatws_onNewComment');
+      if (!this.manualMode) {
+        this._avanzarComentario();
       }
     }, 50);
 
@@ -127,6 +160,7 @@ class YouTubeLiveChatExt {
 
       // Simplemente mete el mensaje limpio a la fila
       if (payload.type === 'COMMENT') {
+        this.totalComments++;
         this.messageQueue.push(payload.data);
       }
     };
@@ -147,6 +181,8 @@ class YouTubeLiveChatExt {
 
   startLive(args) {
     this.currentVideoId = args.ID;
+    this.totalComments = 0; // arrancamos el conteo de nuevo con cada video
+    this.messageQueue = [];
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({
         action: 'START',
@@ -159,6 +195,9 @@ class YouTubeLiveChatExt {
 
   disconnectWS() {
     this.manualDisconnect = true;
+    this.currentVideoId = ''; // "olvida" el video para no retomarlo solo si vuelves a conectar
+    this.totalComments = 0;
+    this.messageQueue = [];
     if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
     if (this.queueInterval) clearInterval(this.queueInterval);
 
@@ -169,6 +208,35 @@ class YouTubeLiveChatExt {
     }
 
     this.connected = false;
+  }
+
+  setManualMode(args) {
+    this.manualMode = args.ESTADO === 'activado';
+  }
+
+  nextComment() {
+    this._avanzarComentario();
+  }
+
+  _avanzarComentario() {
+    if (this.messageQueue.length === 0) return;
+
+    const payload = this.messageQueue.shift();
+    this.author = payload.author;
+    this.message = payload.message;
+    this.avatar = payload.avatar;
+    this.isMod = payload.isMod;
+    this.isOwner = payload.isOwner;
+
+    Scratch.vm.runtime.startHats('ytlivechatws_onNewComment');
+  }
+
+  getTotalComments() {
+    return this.totalComments;
+  }
+
+  getPendingComments() {
+    return this.messageQueue.length;
   }
 
   isConnected() {
