@@ -29,13 +29,12 @@ class YouTubeLiveChatExt {
   getInfo() {
     return {
       id: 'ytlivechatws',
-      name: 'YouTube Live Chat 1.1',
+      name: 'YouTube Live Chat',
       color1: '#FF0000',
       color2: '#CC0000',
       menuIconURI: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+CiAgPHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjM4IiBoZWlnaHQ9IjM4IiByeD0iOSIgZmlsbD0iI0ZGMDAwMCIgc3Ryb2tlPSIjOTkwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTUsMTEgMTUsMjkgMjksMjAiIGZpbGw9IiNGRkZGRkYiLz4KPC9zdmc+Cg==',
       blockIconURI: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+CiAgPHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjM4IiBoZWlnaHQ9IjM4IiByeD0iOSIgZmlsbD0iI0ZGMDAwMCIgc3Ryb2tlPSIjOTkwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTUsMTEgMTUsMjkgMjksMjAiIGZpbGw9IiNGRkZGRkYiLz4KPC9zdmc+Cg==',
       blocks: [
-        // --- Conexión ---
         {
           opcode: 'connectWS',
           blockType: Scratch.BlockType.COMMAND,
@@ -45,18 +44,6 @@ class YouTubeLiveChatExt {
           }
         },
         {
-          opcode: 'disconnectWS',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'desconectar'
-        },
-        {
-          opcode: 'isConnected',
-          blockType: Scratch.BlockType.BOOLEAN,
-          text: '¿conectado al servidor?'
-        },
-        '---',
-        // --- Video ---
-        {
           opcode: 'startLive',
           blockType: Scratch.BlockType.COMMAND,
           text: 'escuchar video ID [ID]',
@@ -64,8 +51,6 @@ class YouTubeLiveChatExt {
             ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'dQw4w9WgXcQ' }
           }
         },
-        '---',
-        // --- Comentarios ---
         {
           opcode: 'onNewComment',
           blockType: Scratch.BlockType.EVENT, // Usa EVENT, es fundamental para no trabarse
@@ -82,6 +67,16 @@ class YouTubeLiveChatExt {
               menu: 'datosMenu'
             }
           }
+        },
+        {
+          opcode: 'isConnected',
+          blockType: Scratch.BlockType.BOOLEAN,
+          text: '¿conectado al servidor?'
+        },
+        {
+          opcode: 'disconnectWS',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'desconectar'
         },
         {
           opcode: 'setManualMode',
