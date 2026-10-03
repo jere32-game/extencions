@@ -48,7 +48,7 @@ class YouTubeLiveChatExt {
           blockType: Scratch.BlockType.COMMAND,
           text: 'escuchar video ID [ID]',
           arguments: {
-            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'dQw4w9WgXcQ' }
+            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'ID del Live' }
           }
         },
         {
