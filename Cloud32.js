@@ -10,7 +10,7 @@
   }
 
   const EXT_ID  = 'Cloud32'; // debe coincidir con el id de getInfo(): los hats se disparan por "<id>_<opcode>"
-  const WS_BASE = "wss://cloud32.vercel.app";
+  const WS_BASE = "wss://cloud32.wisp.uno/";
 
   // ─── Parámetros de conexión ───
   const HEARTBEAT_MS       = 15000;     // cada cuánto se manda un ping de aplicación
