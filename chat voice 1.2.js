@@ -5,7 +5,7 @@
 //   1. Abre TurboWarp: https://turbowarp.org/editor
 //   2. Haz clic en "Extensiones" → "Extensión personalizada"
 //   3. Pega esta URL y marca "Ejecutar sin sandbox"
-//   4. URL de tu servidor WebSocket: https://chat-vocie-32.vercel.app/api/voice
+//   4. URL de tu servidor WebSocket: https://cloud32.wisp.uno/api/voice
 // ============================================================
 
 (function (Scratch) {
@@ -18,7 +18,7 @@
     );
   }
 
-  const DEFAULT_WS = 'wss://chat-vocie-32.vercel.app/api/voice';
+  const DEFAULT_WS = 'wss://cloud32.wisp.uno/api/voice';
 
   // ---- URIs de Arte / Iconos ----
   const ASSETS = {
